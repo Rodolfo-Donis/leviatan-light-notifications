@@ -1,0 +1,427 @@
+{
+  "name": "Leviatan Telegram Agent",
+  "nodes": [
+    {
+      "id": "TelegramTrigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        260
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Leviatan Telegram Bot"
+        }
+      }
+    },
+    {
+      "id": "NormalizeMessage",
+      "name": "Normalize Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        520,
+        260
+      ],
+      "parameters": {
+        "functionCode": "return items.map((item) => {\n  const message = item.json.message || item.json.message || {};\n  const text = (message.text || \"\").toString().trim();\n  const chatId = message.chat && message.chat.id ? message.chat.id : undefined;\n  const lower = text.toLowerCase();\n  return {\n    json: {\n      chatId,\n      text,\n      lowerText: lower\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "RouteIntent",
+      "name": "Route Intent",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        800,
+        260
+      ],
+      "parameters": {
+        "functionCode": "return items.map((item) => {\n  const lowerText = (item.json.lowerText || \"\").toString();\n  let intent = \"unknown\";\n  let confidence = 0;\n  let reason = \"No matching keywords found.\";\n  const hasOnboarding = lowerText.includes(\"onboard\") || lowerText.includes(\"onboarding\") || lowerText.includes(\"new supplier\");\n  const hasRisk = lowerText.includes(\"risk\") && lowerText.includes(\"supplier\");\n  if (hasOnboarding && !hasRisk) {\n    intent = \"supplier_onboarding\";\n    confidence = 0.95;\n    reason = \"Clear onboarding-related keywords detected.\";\n  } else if (hasRisk && !hasOnboarding) {\n    intent = \"supplier_risk\";\n    confidence = 0.95;\n    reason = \"Clear supplier risk-related keywords detected.\";\n  } else if (hasOnboarding && hasRisk) {\n    intent = \"unknown\";\n    confidence = 0.5;\n    reason = \"Both onboarding and risk keywords detected; ambiguous.\";\n  }\n  return {\n    json: {\n      ...item.json,\n      intent,\n      confidence,\n      intentReason: reason\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "UnknownIntentReply",
+      "name": "Unknown Intent Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        120
+      ],
+      "parameters": {
+        "chatId": "={{$json[\"chatId\"]}}",
+        "text": "Hi, thanks for your message. I am not confident enough about what you want to do.\n\nYou can ask me things like:\n- \"Get onboarding suppliers for client demo-client\"\n- \"Show supplier risk for client demo-client\"\n- \"List active purchase orders for client demo-client\"\n- \"Show pending invoices for client demo-client\"\n- \"Show critical deliveries for client demo-client\"\n- \"Show picking tasks for client demo-client\"\n- \"Show expiring contracts for client demo-client\"\n- \"Show spend analytics for client demo-client this month\"\n\nPlease tell me which type of insight you need (for example: onboarding suppliers, supplier risk, active purchase orders, approvals, picking tasks, receiving tasks, critical deliveries, tracking, pending invoices, expiring contracts, spend analytics) and the clientId. I will then ask for any extra details I need."
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Leviatan Telegram Bot"
+        }
+      }
+    },
+    {
+      "id": "IntentSwitch",
+      "name": "Intent Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        260
+      ],
+      "parameters": {
+        "value1": "={{$json[\"intent\"]}}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "supplier_onboarding"
+            },
+            {
+              "operation": "equal",
+              "value2": "supplier_risk"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "IntentConfidenceCheck",
+      "name": "Intent Confidence Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        420
+      ],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"confidence\"]}}",
+              "operation": "larger",
+              "value2": 0.9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "AskIntentClarification",
+      "name": "Ask Intent Clarification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        480
+      ],
+      "parameters": {
+        "chatId": "={{$json[\"chatId\"]}}",
+        "text": "Hi, before I run anything I want to be sure I understood you correctly (at least 90%).\n\nI can help you with these Leviatan routes:\n1) Supplier onboarding – /suppliers/onboarding\n2) Supplier risk – /suppliers/risk-assessment\n3) Active purchase orders – /purchase-orders/active\n4) Purchase order approvals – /purchase-orders/approvals\n5) Warehouse picking tasks – /warehouse/picking-tasks\n6) Warehouse receiving tasks – /warehouse/receiving-tasks\n7) Critical deliveries – /deliveries/critical\n8) Delivery tracking – /deliveries/tracking\n9) Pending invoices – /invoices/pending\n10) Expiring contracts – /contracts/expiring\n11) Spend analytics – /spend/analytics\n\nPlease reply with one of these options and include:\n- clientId (for example: client demo-client)\n- Any filters you care about (for example: status in progress, risk level high, due date, period month).\n\nOnce you confirm, I will run the right endpoint and send a concise summary plus a well-formatted PDF if the list is long."
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Leviatan Telegram Bot"
+        }
+      }
+    },
+    {
+      "id": "ParseOnboardingQuery",
+      "name": "Parse Onboarding Query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "functionCode": "function extractClientId(text) {\n  const clientMatch = text.match(/client\\s+([a-z0-9_-]+)/i);\n  if (clientMatch && clientMatch[1]) {\n    return clientMatch[1];\n  }\n  // Fallback client for demos\n  return \"demo-client\";\n}\n\nfunction extractStatus(text) {\n  const lower = text.toLowerCase();\n  if (lower.includes(\"in progress\")) return \"IN_PROGRESS\";\n  if (lower.includes(\"awaiting approval\") || lower.includes(\"pending approval\")) return \"AWAITING_APPROVAL\";\n  if (lower.includes(\"rejected\")) return \"REJECTED\";\n  return undefined;\n}\n\nreturn items.map((item) => {\n  const text = (item.json.text || \"\").toString();\n  const clientId = extractClientId(text);\n  const status = extractStatus(text);\n  const limitMatch = text.match(/limit\\s+(\\d{1,3})/i);\n  const limit = limitMatch ? parseInt(limitMatch[1], 10) : 50;\n  const demo = /demo/i.test(text) ? \"true\" : \"false\";\n  return {\n    json: {\n      ...item.json,\n      query: {\n        clientId,\n        status,\n        limit,\n        demo\n      }\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "CallOnboardingAPI",
+      "name": "Call Onboarding API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env[\"LEVIATAN_API_BASE_URL\"] || \"http://localhost:3000/api\"}}/suppliers/onboarding",
+        "authentication": "headerAuth",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "={{$env[\"LEVIATAN_API_AUTH_TOKEN\"] ? `Bearer ${$env[\"LEVIATAN_API_AUTH_TOKEN\"]}` : \"\"}}"
+            }
+          ]
+        },
+        "options": {
+          "qs": "={{$json[\"query\"]}}"
+        }
+      }
+    },
+    {
+      "id": "FormatOnboardingSummary",
+      "name": "Format Onboarding Summary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        200
+      ],
+      "parameters": {
+        "functionCode": "return items.map((item) => {\n  const envelope = item.json;\n  if (!envelope.success) {\n    const message = `❌ Error calling onboarding endpoint: ${envelope.error && envelope.error.message ? envelope.error.message : 'Unknown error'}`;\n    return { json: { ...item.json, isError: true, textMessage: message, htmlTable: \"\" } };\n  }\n  const rows = envelope.data || [];\n  const meta = envelope.meta || {};\n  const count = Array.isArray(rows) ? rows.length : 0;\n  const maxPreview = 15;\n  const previewRows = rows.slice(0, maxPreview);\n  const summaryLines = [];\n  summaryLines.push(`✅ I found ${count} onboarding suppliers for client ${meta.clientId || 'unknown'}.`);\n  if (count > maxPreview) {\n    summaryLines.push(`I will show you the first ${maxPreview} here and attach a PDF with the complete list so the chat stays readable.`);\n  }\n  previewRows.forEach((r) => {\n    summaryLines.push(`• ${r.name} – status: ${r.status}, industry: ${r.industry}, step: ${r.onboardingStep}`);\n  });\n  const textMessage = summaryLines.join(\"\\n\");\n  const needsPdf = count > maxPreview;\n  const header = `<tr><th>Name</th><th>Status</th><th>Industry</th><th>Compliance</th><th>Step</th><th>Registration Date</th></tr>`;\n  const body = rows\n    .map((r) => {\n      let bgColor = \"#e8f5e9\";\n      if (r.status === \"AWAITING_APPROVAL\") bgColor = \"#fff8e1\";\n      if (r.status === \"REJECTED\") bgColor = \"#ffebee\";\n      return `<tr style=\\\"background:${bgColor};\\\"><td>${r.name}</td><td>${r.status}</td><td>${r.industry}</td><td>${r.complianceStatus}</td><td>${r.onboardingStep}</td><td>${r.registrationDate}</td></tr>`;\n    })\n    .join(\"\\n\");\n  const htmlTable = `<html><head><meta charset=\\\"utf-8\\\"/><style>body{font-family:Arial,sans-serif;font-size:12px;color:#263238;background:#fafafa;margin:16px;}h2{color:#1565c0;}p{margin-bottom:8px;}table{border-collapse:collapse;width:100%;background:#ffffff;border-radius:4px;overflow:hidden;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:11px;}th{background:#f5f5f5;}</style></head><body><h2>Supplier Onboarding – Client ${meta.clientId || 'unknown'}</h2><p>Total suppliers: ${count}</p><table>${header}${body}</table></body></html>`;\n  return {\n    json: {\n      ...item.json,\n      textMessage,\n      htmlTable,\n      needsPdf\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "GenerateOnboardingPDF",
+      "name": "Generate Onboarding PDF",
+      "type": "n8n-nodes-base.htmlToPdf",
+      "typeVersion": 1,
+      "position": [
+        2040,
+        120
+      ],
+      "parameters": {
+        "options": {},
+        "html": "={{$json[\"htmlTable\"]}}"
+      }
+    },
+    {
+      "id": "OnboardingNeedsPdfSplit",
+      "name": "Onboarding Needs PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2040,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"needsPdf\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "SendOnboardingTextOnly",
+      "name": "Send Onboarding Text Only",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        320
+      ],
+      "parameters": {
+        "chatId": "={{$json[\"chatId\"]}}",
+        "text": "={{$json[\"textMessage\"]}}"
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Leviatan Telegram Bot"
+        }
+      }
+    },
+    {
+      "id": "SendOnboardingWithPdf",
+      "name": "Send Onboarding With PDF",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        120
+      ],
+      "parameters": {
+        "resource": "document",
+        "chatId": "={{$json[\"chatId\"]}}",
+        "document": "={{$binary.data}}",
+        "additionalFields": {
+          "caption": "={{$json[\"textMessage\"]}}",
+          "fileName": "onboarding-suppliers.pdf"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Leviatan Telegram Bot"
+        }
+      }
+    },
+    {
+      "id": "SupplierRiskPlaceholder",
+      "name": "Supplier Risk – TODO",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        340
+      ],
+      "parameters": {
+        "functionCode": "return items.map((item) => {\n  // Placeholder for future implementation of supplier risk intent.\n  return {\n    json: {\n      ...item.json,\n      textMessage: \"Supplier risk intent detected but not implemented yet.\"\n    }\n  };\n});"
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Message": {
+      "main": [
+        [
+          {
+            "node": "Route Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Intent": {
+      "main": [
+        [
+          {
+            "node": "Intent Confidence Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    "Intent Confidence Check": {
+      "main": [
+        [
+          {
+            "node": "Intent Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ask Intent Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    },
+    "Intent Switch": {
+      "main": [
+        [
+          {
+            "node": "Parse Onboarding Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SupplierRiskPlaceholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unknown Intent Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Onboarding Query": {
+      "main": [
+        [
+          {
+            "node": "Call Onboarding API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Onboarding API": {
+      "main": [
+        [
+          {
+            "node": "Format Onboarding Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Onboarding Summary": {
+      "main": [
+        [
+          {
+            "node": "Onboarding Needs PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Onboarding Needs PDF?": {
+      "main": [
+        [
+          {
+            "node": "Generate Onboarding PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Onboarding Text Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Onboarding PDF": {
+      "main": [
+        [
+          {
+            "node": "Send Onboarding With PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "leviatan-telegram-agent-v1"
+}
+
