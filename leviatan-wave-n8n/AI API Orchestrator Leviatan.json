@@ -1,0 +1,1284 @@
+{
+  "name": "AI API Orchestrator (Pre-Confirmation)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [1040, -80],
+      "id": "6cd7cd9c-c2ed-43a5-aa01-74f3bfee7cc8",
+      "typeVersion": 1.2,
+      "webhookId": "fdf5c57b-59e4-4e73-9954-06559c047943",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": ["callback_query"],
+        "additionalFields": {}
+      },
+      "name": "Telegram Callback",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [1056, 520],
+      "id": "722cd027-8c63-4add-bc98-259ebab059be",
+      "typeVersion": 1.2,
+      "webhookId": "dfaba425-a793-4942-b431-82123d729fcb",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const msg = $json.message || {};\nconst text = (msg.text || '').toString();\nconst chatId = msg.chat && msg.chat.id !== undefined ? msg.chat.id : undefined;\nreturn [{ json: { text, chatId } }];"
+      },
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.function",
+      "position": [1248, -80],
+      "id": "b27ae6c1-176b-48b6-afd8-c1f09027b84c",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const text = ($json.text || '').toString().trim();\nconst chatId = $json.chatId;\nlet mode = 'ai';\nlet command = '';\nif (text.charAt(0) === '/') {\n  mode = 'command';\n  const token = (text.split(/\\s+/)[0] || '').split('@')[0].toLowerCase();\n  command = token;\n  if (command === '/catalog' || command === '/endpoints' || command === '/menu') command = '/insights';\n}\nreturn [{ json: { chatId, text, mode, command } }];"
+      },
+      "name": "Detect Bot Command",
+      "type": "n8n-nodes-base.function",
+      "position": [1320, -80],
+      "id": "f2a2b3c4-0101-4000-8000-000000000101",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "if-cmd-mode",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "command",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "IF Bot Command",
+      "type": "n8n-nodes-base.if",
+      "position": [1380, -200],
+      "id": "f2a2b3c4-0102-4000-8000-000000000102",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cmd-start",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cmd-help",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/help",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "help"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cmd-insights",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/insights",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "insights"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cmd-filters",
+                    "leftValue": "={{ $json.command }}",
+                    "rightValue": "/filters",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "filters"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "name": "Command Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [1580, -320],
+      "id": "f2a2b3c4-0103-4000-8000-000000000103",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "<b>Welcome to Leviatan</b>\n\nI help your team pull <b>read-only business insights</b> from Leviatan (suppliers, orders, warehouse, deliveries, invoices, contracts, and spend).\n\n<b>How it works</b>\n1) Ask in plain language or tap <b>/insights</b> to see every insight type.\n2) I may ask for your <code>client</code> id and a few filters.\n3) Before any data request runs, I ask you to confirm with <b>YES</b> or <b>NO</b>.\n\n<b>Commands</b>\n/help — trust, privacy, and tips\n/insights — full menu + quick info buttons\n/filters — examples of filters you can mention\n\n<i>Leviatan insights assistant</i>",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "name": "Telegram Leviatan Welcome",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1840, -520],
+      "id": "f2a2b3c4-0104-4000-8000-000000000104",
+      "typeVersion": 1.2,
+      "webhookId": "b2c3d4e5-2222-4222-8222-222222222201",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "<b>Leviatan assistant — help</b>\n\n<b>What you can ask</b>\nAnything like: “show onboarding for client demo-client”, “critical deliveries this week”, “spend by month for demo-client”.\n\n<b>Commands</b>\n<code>/insights</code> — catalog of insight types + buttons for a short description of each\n<code>/filters</code> — filter ideas in plain language\n<code>/start</code> — welcome overview\n\n<b>Confirmation</b>\nNo API call runs until you reply <b>YES</b>. Reply <b>NO</b> to stop.\n\n<b>Buttons under /insights</b>\nThey only show <i>what each insight means</i>. They do not run a report. To run one, type your request in chat.\n\n<b>Register commands (BotFather)</b>\nSet <code>start</code>, <code>help</code>, <code>insights</code>, <code>filters</code> so they appear in the Telegram menu.\n\n<i>Questions? Ask your Leviatan admin.</i>",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "name": "Telegram Leviatan Help",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1840, -380],
+      "id": "f2a2b3c4-0105-4000-8000-000000000105",
+      "typeVersion": 1.2,
+      "webhookId": "b2c3d4e5-2222-4222-8222-222222222202",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatId = $json.chatId;\nconst lines = [\n  '<b>Leviatan — filters you can mention</b>',\n  '<i>Use these ideas in the same message as your client id.</i>',\n  '',\n  '<b>Client</b>',\n  '<code>client demo-client</code> or <code>client acme-corp</code>',\n  '',\n  '<b>Time</b>',\n  'from date / to date, this month, this quarter, due before…',\n  '',\n  '<b>Status (examples)</b>',\n  'in progress, awaiting approval, open POs, high priority picks',\n  '',\n  '<b>Spend period</b>',\n  'MONTH, QUARTER, or YEAR (required for spend analytics)',\n  '',\n  '<b>Delivery tracking</b>',\n  'list PO numbers: <code>PO-1001, PO-1002</code>',\n  '',\n  '<b>Demo data</b>',\n  'say <code>demo</code> if you use the demo dataset',\n  '',\n  '<i>Tip: /insights lists every insight type we support.</i>'\n];\nreturn [{ json: { chatId, text: lines.join('\\n') } }];"
+      },
+      "name": "Build Filters Guide",
+      "type": "n8n-nodes-base.function",
+      "position": [1840, -240],
+      "id": "f2a2b3c4-0106-4000-8000-000000000106",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "name": "Telegram Leviatan Filters",
+      "type": "n8n-nodes-base.telegram",
+      "position": [2040, -240],
+      "id": "f2a2b3c4-0107-4000-8000-000000000107",
+      "typeVersion": 1.2,
+      "webhookId": "b2c3d4e5-2222-4222-8222-222222222203",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "<b>Unknown command</b>\n\nTry <code>/help</code>, <code>/insights</code>, or <code>/filters</code>. You can also type your question in plain language.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "name": "Telegram Unknown Command",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1840, -100],
+      "id": "f2a2b3c4-0108-4000-8000-000000000108",
+      "typeVersion": 1.2,
+      "webhookId": "b2c3d4e5-2222-4222-8222-222222222204",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json.text}}",
+        "options": {
+          "systemMessage": "You are the Leviatan Telegram assistant: interpret user messages and output JSON that routes to the read-only Leviatan API. Output a single JSON object only. No markdown, no code fences, no text before or after the JSON.\n\nSchema (types):\n{\"action\":\"list_endpoints\"|\"missing_inputs\"|\"ask_clarification\"|\"propose_execute\",\"endpointId\":string|null,\"confidence\":number,\"query\":object,\"missingFields\":string[],\"userMessage\":string}\n\nendpointId whitelist (exact strings): suppliers_onboarding | suppliers_risk | po_active | po_approvals | warehouse_picking | warehouse_receiving | deliveries_critical | deliveries_tracking | invoices_pending | contracts_expiring | spend_analytics\n\nAction selection:\n- list_endpoints: user wants catalog, what can you call, available routes, list APIs, or /insights style requests in free text.\n- missing_inputs: you know the endpoint but clientId is missing, or deliveries_tracking without poNumbers, or spend_analytics without period. Fill missingFields with API field names (e.g. [\"clientId\"], [\"poNumbers\"], [\"period\"]). Set helpful userMessage.\n- ask_clarification: ambiguous intent, multiple possible endpoints, chit-chat, or confidence < 0.75 for a safe call. Ask one concrete question; suggest /insights or describing the insight they need.\n- propose_execute: single clear intent, confidence >= 0.75, endpointId set, query includes clientId, and all extra required fields for that endpoint. query must contain only keys allowed for that route (see below).\n\nNatural language → endpoint hints:\n- onboarding / new suppliers → suppliers_onboarding\n- supplier risk / compliance risk → suppliers_risk\n- open POs / purchase orders → po_active; approvals / pending approval POs → po_approvals\n- picking / pick tasks → warehouse_picking; receiving / inbound → warehouse_receiving\n- critical deliveries / late deliveries → deliveries_critical; track PO / shipment / poNumbers → deliveries_tracking\n- unpaid / pending invoices → invoices_pending; contracts ending → contracts_expiring\n- spend / procurement analytics / by month or quarter → spend_analytics (needs period)\n\nQuery keys per endpoint (omit unknown keys; use strings for all query values as typical for GET):\n- suppliers_onboarding: clientId (required), status optional IN_PROGRESS|AWAITING_APPROVAL|REJECTED, limit number, demo optional \"true\"|\"false\"\n- suppliers_risk: clientId, riskLevel optional HIGH|MEDIUM|LOW, complianceStatus optional COMPLIANT|NON_COMPLIANT, demo\n- po_active: clientId, status optional OPEN|PARTIALLY_RECEIVED|CLOSED, fromDate, toDate, demo\n- po_approvals: clientId, pendingFor, amountGte number, demo\n- warehouse_picking: clientId, priority HIGH|MEDIUM|LOW, status PENDING|IN_PROGRESS, demo\n- warehouse_receiving: clientId, expectedDateStart, expectedDateEnd, demo\n- deliveries_critical: clientId, weekRange usually \"current\", demo\n- deliveries_tracking: clientId, poNumbers (required, string, can be comma-separated PO list), demo\n- invoices_pending: clientId, matchStatus 2WAY|3WAY|EXCEPTION, dueDateStart, demo\n- contracts_expiring: clientId, daysUntilExpiry number, demo\n- spend_analytics: clientId, period required MONTH|QUARTER|YEAR, category optional, demo\n\nIf user says client demo-client or client X, set query.clientId to that id (e.g. demo-client). Map spoken filters to enums (e.g. in progress → IN_PROGRESS for onboarding).\n\nMinimal examples (format only):\n{\"action\":\"list_endpoints\",\"endpointId\":null,\"confidence\":0.95,\"query\":{},\"missingFields\":[],\"userMessage\":\"\"}\n{\"action\":\"missing_inputs\",\"endpointId\":\"spend_analytics\",\"confidence\":0.9,\"query\":{\"clientId\":\"demo-client\"},\"missingFields\":[\"period\"],\"userMessage\":\"Spend analytics needs period: MONTH, QUARTER, or YEAR.\"}\n{\"action\":\"propose_execute\",\"endpointId\":\"suppliers_onboarding\",\"confidence\":0.88,\"query\":{\"clientId\":\"demo-client\",\"status\":\"IN_PROGRESS\",\"limit\":20,\"demo\":\"false\"},\"missingFields\":[],\"userMessage\":\"\"}"
+        }
+      },
+      "name": "AI Intent Parser",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [1440, -224],
+      "id": "288210ec-58d8-4f5c-be2a-fc351eb79df7",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatId = $('Normalize Input').first().json.chatId;\nconst userText = ($('Normalize Input').first().json.text || '').toString();\nlet raw = '';\nif ($json.output !== undefined && $json.output !== null) {\n  raw = typeof $json.output === 'string' ? $json.output : JSON.stringify($json.output);\n} else {\n  raw = JSON.stringify($json);\n}\nlet parsed = null;\ntry {\n  const cleaned = raw.replace(/```json\\n?|\\n?```/g, '').trim();\n  const start = cleaned.indexOf('{');\n  const end = cleaned.lastIndexOf('}');\n  if (start >= 0 && end > start) {\n    parsed = JSON.parse(cleaned.slice(start, end + 1));\n  }\n} catch (e) {\n  parsed = null;\n}\nconst validActions = ['list_endpoints', 'missing_inputs', 'ask_clarification', 'propose_execute'];\nlet action = 'ask_clarification';\nlet endpointId = null;\nlet confidence = 0;\nlet query = {};\nlet missingFields = [];\nlet userMessage = '';\nif (parsed && typeof parsed === 'object') {\n  action = validActions.includes(parsed.action) ? parsed.action : 'ask_clarification';\n  endpointId = parsed.endpointId || null;\n  confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.5;\n  query = parsed.query && typeof parsed.query === 'object' ? parsed.query : {};\n  missingFields = Array.isArray(parsed.missingFields) ? parsed.missingFields : [];\n  userMessage = (parsed.userMessage || '').toString();\n}\nconst lower = userText.toLowerCase();\nif (!parsed && lower.includes('list') && (lower.includes('endpoint') || lower.includes('api'))) {\n  action = 'list_endpoints';\n  confidence = 0.9;\n}\nif (action === 'propose_execute' && confidence < 0.75) {\n  action = 'ask_clarification';\n  if (!userMessage) {\n    userMessage = 'I am not confident enough yet. Which insight do you need? Send /insights for the full Leviatan menu or describe your request.';\n  }\n}\nif (action === 'propose_execute' && !endpointId) {\n  action = 'ask_clarification';\n  if (!userMessage) {\n    userMessage = 'Which insight should I run? Send /insights for the catalog or name the area (e.g. onboarding, spend).';\n  }\n}\nreturn [{ json: { chatId, text: userText, action, endpointId, confidence, query, missingFields, userMessage } }];"
+      },
+      "name": "Parse Agent Output",
+      "type": "n8n-nodes-base.function",
+      "position": [1648, -224],
+      "id": "f1a2b3c4-0001-4000-8000-000000000001",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "sw-rule-list",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "list_endpoints",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "list_endpoints"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "sw-rule-miss",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "missing_inputs",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "missing_inputs"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "sw-rule-prop",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "propose_execute",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "propose_execute"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "sw-rule-ask",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "ask_clarification",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ask_clarification"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "name": "Intent Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [1856, -224],
+      "id": "f1a2b3c4-0002-4000-8000-000000000002",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatId = $json.chatId;\nconst blocks = [\n  ['1 · Supplier onboarding', 'See which suppliers are being set up and where they sit in approval.', '/suppliers/onboarding', 'Tell us your <code>client</code> id. You can add status (e.g. in progress) and how many rows you want.'],\n  ['2 · Supplier risk', 'Spot suppliers by risk level and compliance so you can act early.', '/suppliers/risk-assessment', 'Needs <code>client</code>. Optional: high/medium/low risk, compliant or not.'],\n  ['3 · Active purchase orders', 'Monitor open and in-flight POs across the business.', '/purchase-orders/active', 'Needs <code>client</code>. Optional: PO status, date range.'],\n  ['4 · PO approvals', 'See purchase orders waiting on someone to approve.', '/purchase-orders/approvals', 'Needs <code>client</code>. Optional: approver, minimum amount.'],\n  ['5 · Picking tasks', 'Warehouse work to pick and ship orders on time.', '/warehouse/picking-tasks', 'Needs <code>client</code>. Optional: priority, task status.'],\n  ['6 · Receiving tasks', 'Inbound goods expected at the dock or warehouse.', '/warehouse/receiving-tasks', 'Needs <code>client</code>. Optional: expected arrival window.'],\n  ['7 · Critical deliveries', 'Deliveries that need attention in the current week.', '/deliveries/critical', 'Needs <code>client</code>. Usually “this week”.'],\n  ['8 · Delivery tracking', 'Follow shipments tied to specific purchase orders.', '/deliveries/tracking', 'Needs <code>client</code> and <b>PO numbers</b> (list them in your message).'],\n  ['9 · Pending invoices', 'Invoices still waiting to be matched or paid.', '/invoices/pending', 'Needs <code>client</code>. Optional: match type, due date.'],\n  ['10 · Expiring contracts', 'Contracts coming up for renewal so legal and procurement can plan.', '/contracts/expiring', 'Needs <code>client</code>. Optional: how many days ahead to look.'],\n  ['11 · Spend analytics', 'Spend totals by month, quarter, or year.', '/spend/analytics', 'Needs <code>client</code> and <b>period</b>: MONTH, QUARTER, or YEAR.']\n];\nconst lines = [\n  '<b>Leviatan — insight catalog</b>',\n  '<i>Read-only summaries. Nothing runs until you confirm with YES. Buttons below explain each type — they do not fetch data.</i>',\n  ''\n];\nfor (const [title, summary, path, hint] of blocks) {\n  lines.push('<b>' + title + '</b>');\n  lines.push('<i>' + summary + '</i>');\n  lines.push('<code>' + path + '</code>');\n  lines.push('└ <i>' + hint + '</i>');\n  lines.push('');\n}\nlines.push('<b>For administrators</b>');\nlines.push('<code>LEVIATAN_API_BASE_URL</code> · <code>LEVIATAN_API_AUTH_TOKEN</code> (optional)');\nlines.push('');\nlines.push('<i>Next: type what you need, e.g. “onboarding for client demo-client in progress”, or use /filters for ideas.</i>');\nconst text = lines.join('\\n');\nconst keys = [\n  { t: '1 Onboarding', d: 'h:onb' },\n  { t: '2 Risk', d: 'h:sr' },\n  { t: '3 POs', d: 'h:poa' },\n  { t: '4 Approvals', d: 'h:pap' },\n  { t: '5 Picking', d: 'h:wpk' },\n  { t: '6 Receiving', d: 'h:wrc' },\n  { t: '7 Critical', d: 'h:dcr' },\n  { t: '8 Tracking', d: 'h:dtr' },\n  { t: '9 Invoices', d: 'h:inv' },\n  { t: '10 Contracts', d: 'h:cex' },\n  { t: '11 Spend', d: 'h:spa' }\n];\nconst inline_keyboard = [];\nfor (let i = 0; i < keys.length; i += 2) {\n  const row = [{ text: keys[i].t, callback_data: keys[i].d }];\n  if (keys[i + 1]) row.push({ text: keys[i + 1].t, callback_data: keys[i + 1].d });\n  inline_keyboard.push(row);\n}\nconst replyMarkup = JSON.stringify({ inline_keyboard });\nreturn [{ json: { chatId, text, replyMarkup } }];"
+      },
+      "name": "Build Endpoint Catalog",
+      "type": "n8n-nodes-base.function",
+      "position": [2000, -400],
+      "id": "e1a2b3c4-00e1-4000-8000-00000000e001",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "reply_markup": "={{ $json.replyMarkup }}"
+        }
+      },
+      "name": "Telegram List Endpoints",
+      "type": "n8n-nodes-base.telegram",
+      "position": [2120, -400],
+      "id": "f1a2b3c4-0003-4000-8000-000000000003",
+      "typeVersion": 1.2,
+      "webhookId": "a1b2c3d4-1111-4111-8111-111111111101",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.userMessage || ('Missing required input: ' + (($json.missingFields || []).join(', ') || 'see endpoint docs')) }}",
+        "additionalFields": {}
+      },
+      "name": "Telegram Missing Fields",
+      "type": "n8n-nodes-base.telegram",
+      "position": [2120, -240],
+      "id": "f1a2b3c4-0004-4000-8000-000000000004",
+      "typeVersion": 1.2,
+      "webhookId": "a1b2c3d4-1111-4111-8111-111111111102",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.userMessage || 'I am not sure which insight you need. Try /insights for the Leviatan menu, /filters for filter ideas, or describe what you want (include your client id and any filters).' }}",
+        "additionalFields": {}
+      },
+      "name": "Telegram Ask Clarification",
+      "type": "n8n-nodes-base.telegram",
+      "position": [2120, -80],
+      "id": "f1a2b3c4-0005-4000-8000-000000000005",
+      "typeVersion": 1.2,
+      "webhookId": "a1b2c3d4-1111-4111-8111-111111111103",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatId = $json.chatId;\nconst endpointId = $json.endpointId;\nconst query = $json.query || {};\nconst labels = {\n  suppliers_onboarding: 'Supplier onboarding',\n  suppliers_risk: 'Supplier risk assessment',\n  po_active: 'Active purchase orders',\n  po_approvals: 'Purchase order approvals',\n  warehouse_picking: 'Warehouse picking tasks',\n  warehouse_receiving: 'Warehouse receiving tasks',\n  deliveries_critical: 'Critical deliveries',\n  deliveries_tracking: 'Delivery tracking',\n  invoices_pending: 'Pending invoices',\n  contracts_expiring: 'Expiring contracts',\n  spend_analytics: 'Spend analytics'\n};\nconst label = labels[endpointId] || endpointId;\nconst qstr = JSON.stringify(query, null, 2);\nconst confirmationText = 'Please confirm this API call:\\n\\n' + label + ' (' + endpointId + ')\\n\\nQuery parameters:\\n' + qstr + '\\n\\nReply YES to execute or NO to cancel.';\nreturn [{ json: { chatId, endpointId, query, confirmationText } }];"
+      },
+      "name": "Prepare Execute Confirmation",
+      "type": "n8n-nodes-base.function",
+      "position": [2120, 80],
+      "id": "f1a2b3c4-0006-4000-8000-000000000006",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $json.chatId }}",
+        "message": "={{ $json.confirmationText }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2320, 80],
+      "id": "3f1eef00-3a13-48a3-a973-03ddc2b79c8a",
+      "name": "Send message and wait for response",
+      "webhookId": "db0edd07-51a9-498d-b675-f593527cf904",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const prep = $('Prepare Execute Confirmation').first().json;\nconst msg = $json.message || {};\nconst text = (msg.text || $json.text || '').toString().trim();\nconst upper = text.toUpperCase();\nconst confirmed = ['YES', 'Y', 'SI', 'OK', 'CONFIRM'].includes(upper);\nconst cancelled = ['NO', 'N', 'CANCEL'].includes(upper);\nlet nextStep = 'retry';\nif (confirmed) nextStep = 'execute';\nelse if (cancelled) nextStep = 'cancel';\nreturn [{ json: { chatId: prep.chatId, endpointId: prep.endpointId, query: prep.query, userReply: text, nextStep, retryMessage: 'Please reply with YES or NO only.' } }];"
+      },
+      "name": "Parse Confirmation Reply",
+      "type": "n8n-nodes-base.function",
+      "position": [2520, 80],
+      "id": "f1a2b3c4-0007-4000-8000-000000000007",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "sc-exec",
+                    "leftValue": "={{ $json.nextStep }}",
+                    "rightValue": "execute",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "execute"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "sc-cancel",
+                    "leftValue": "={{ $json.nextStep }}",
+                    "rightValue": "cancel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancel"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "name": "Switch Confirmation Step",
+      "type": "n8n-nodes-base.switch",
+      "position": [2720, 80],
+      "id": "f1a2b3c4-0008-4000-8000-000000000008",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "functionCode": "const ENDPOINTS = {\n  suppliers_onboarding: { path: '/suppliers/onboarding', keys: ['clientId', 'status', 'limit', 'demo'] },\n  suppliers_risk: { path: '/suppliers/risk-assessment', keys: ['clientId', 'riskLevel', 'complianceStatus', 'demo'] },\n  po_active: { path: '/purchase-orders/active', keys: ['clientId', 'status', 'fromDate', 'toDate', 'demo'] },\n  po_approvals: { path: '/purchase-orders/approvals', keys: ['clientId', 'pendingFor', 'amountGte', 'demo'] },\n  warehouse_picking: { path: '/warehouse/picking-tasks', keys: ['clientId', 'priority', 'status', 'demo'] },\n  warehouse_receiving: { path: '/warehouse/receiving-tasks', keys: ['clientId', 'expectedDateStart', 'expectedDateEnd', 'demo'] },\n  deliveries_critical: { path: '/deliveries/critical', keys: ['clientId', 'weekRange', 'demo'] },\n  deliveries_tracking: { path: '/deliveries/tracking', keys: ['clientId', 'poNumbers', 'demo'] },\n  invoices_pending: { path: '/invoices/pending', keys: ['clientId', 'matchStatus', 'dueDateStart', 'demo'] },\n  contracts_expiring: { path: '/contracts/expiring', keys: ['clientId', 'daysUntilExpiry', 'demo'] },\n  spend_analytics: { path: '/spend/analytics', keys: ['clientId', 'period', 'category', 'demo'] }\n};\nconst base = (process.env.LEVIATAN_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\\/$/, '');\nconst endpointId = $json.endpointId;\nconst chatId = $json.chatId;\nif (!endpointId || !ENDPOINTS[endpointId]) {\n  return [{ json: { chatId, validationOk: false, route: 'error', validationMessage: 'Unknown or missing endpoint.', requestUrl: null, endpointId } }];\n}\nconst spec = ENDPOINTS[endpointId];\nconst q = $json.query || {};\nconst sanitized = {};\nfor (const k of spec.keys) {\n  if (q[k] !== undefined && q[k] !== null && q[k] !== '') sanitized[k] = q[k];\n}\nconst missing = [];\nif (!sanitized.clientId) missing.push('clientId');\nif (endpointId === 'deliveries_tracking' && !sanitized.poNumbers) missing.push('poNumbers');\nif (endpointId === 'spend_analytics' && !sanitized.period) missing.push('period');\nif (missing.length) {\n  return [{ json: { chatId, validationOk: false, route: 'error', validationMessage: 'Missing required fields: ' + missing.join(', '), requestUrl: null, endpointId } }];\n}\nconst qs = new URLSearchParams();\nfor (const [k, v] of Object.entries(sanitized)) {\n  qs.append(k, String(v));\n}\nconst requestUrl = base + spec.path + '?' + qs.toString();\nreturn [{ json: { chatId, validationOk: true, route: 'http', validationMessage: '', requestUrl, endpointId } }];"
+      },
+      "name": "Validate and Build Request",
+      "type": "n8n-nodes-base.function",
+      "position": [2960, -40],
+      "id": "f1a2b3c4-0009-4000-8000-000000000009",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "if-val-ok",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "http",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "IF Validation OK",
+      "type": "n8n-nodes-base.if",
+      "position": [3160, -40],
+      "id": "f1a2b3c4-000a-4000-8000-00000000000a",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { chatId: $json.chatId, message: $json.validationMessage || 'Validation failed.' } }];"
+      },
+      "name": "Build Validation Error",
+      "type": "n8n-nodes-base.function",
+      "position": [3160, 120],
+      "id": "f1a2b3c4-000b-4000-8000-00000000000b",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { chatId: $json.chatId, message: $json.retryMessage || 'Please reply with YES or NO only.' } }];"
+      },
+      "name": "Build Retry Message",
+      "type": "n8n-nodes-base.function",
+      "position": [2960, 200],
+      "id": "f1a2b3c4-000c-4000-8000-00000000000c",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const cq = $json.callback_query || {};\nconst chatId = cq.message && cq.message.chat ? cq.message.chat.id : undefined;\nconst data = (cq.data || '').toString().trim();\nlet route = 'other';\nlet helpCode = null;\nif (data === 'cancel' || data === 'no' || data === 'NO') route = 'cancel';\nelse if (data.indexOf('h:') === 0 && data.length > 2) {\n  route = 'insight_card';\n  helpCode = data.slice(2);\n}\nreturn [{ json: { chatId, route, helpCode, rawData: data } }];"
+      },
+      "name": "Handle Callback",
+      "type": "n8n-nodes-base.function",
+      "position": [1264, 520],
+      "id": "a514d7b5-9ef5-4bcf-9c88-969905243dda",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cb-r-cancel",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "cancel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancel"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cb-r-card",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "insight_card",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "insight_card"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "name": "Callback Route Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [1456, 520],
+      "id": "cc98fd8d-a3b3-4955-8df0-4e72cac37b3b",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatId = $json.chatId;\nconst code = ($json.helpCode || '').toString();\nconst C = {\n  onb: { title: 'Supplier onboarding', body: 'Shows suppliers in your onboarding pipeline: registration, steps, and approval status. Use when procurement or compliance wants a live list of new vendors.', need: 'client id. Optional: status (in progress / awaiting approval), row limit.', path: '/suppliers/onboarding' },\n  sr: { title: 'Supplier risk', body: 'Highlights exposure from supplier risk scores and compliance flags so you can prioritize reviews.', need: 'client id. Optional: risk level, compliance.', path: '/suppliers/risk-assessment' },\n  poa: { title: 'Active purchase orders', body: 'Open and partially fulfilled POs so operations and finance see what is still active.', need: 'client id. Optional: PO status, date range.', path: '/purchase-orders/active' },\n  pap: { title: 'PO approvals', body: 'Purchase orders waiting on an approver, useful for management follow-up.', need: 'client id. Optional: approver, minimum amount.', path: '/purchase-orders/approvals' },\n  wpk: { title: 'Picking tasks', body: 'Work the warehouse must pick to ship on time.', need: 'client id. Optional: priority, task status.', path: '/warehouse/picking-tasks' },\n  wrc: { title: 'Receiving tasks', body: 'Expected inbound receipts so receiving and planning stay aligned.', need: 'client id. Optional: expected date window.', path: '/warehouse/receiving-tasks' },\n  dcr: { title: 'Critical deliveries', body: 'Deliveries that need attention in the current week.', need: 'client id.', path: '/deliveries/critical' },\n  dtr: { title: 'Delivery tracking', body: 'Status for specific POs you name. Does not run until you list PO numbers in a chat message.', need: 'client id and PO numbers (comma-separated).', path: '/deliveries/tracking' },\n  inv: { title: 'Pending invoices', body: 'Invoices not yet fully matched or paid.', need: 'client id. Optional: match type, due date.', path: '/invoices/pending' },\n  cex: { title: 'Expiring contracts', body: 'Contracts nearing end date for renewal planning.', need: 'client id. Optional: days until expiry.', path: '/contracts/expiring' },\n  spa: { title: 'Spend analytics', body: 'Roll-up of spend by month, quarter, or year.', need: 'client id and period: MONTH, QUARTER, or YEAR.', path: '/spend/analytics' }\n};\nconst card = C[code];\nlet text;\nif (!card) {\n  text = '<b>Leviatan</b>\\n\\nUnknown insight code. Open <code>/insights</code> again or type your request in chat.';\n} else {\n  text = '<b>Leviatan — ' + card.title + '</b>\\n\\n<i>' + card.body + '</i>\\n\\n<b>What to send in chat</b>\\n' + card.need + '\\n\\n<code>' + card.path + '</code>\\n\\n<i>This card is informational. Reply in chat to run a report; confirm with YES when asked.</i>';\n}\nreturn [{ json: { chatId, text } }];"
+      },
+      "name": "Build Leviatan Insight Card",
+      "type": "n8n-nodes-base.function",
+      "position": [1680, 480],
+      "id": "f2a2b3c4-0109-4000-8000-000000000109",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "name": "Telegram Insight Card",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1880, 480],
+      "id": "f2a2b3c4-010a-4000-8000-00000000010a",
+      "typeVersion": 1.2,
+      "webhookId": "b2c3d4e5-2222-4222-8222-222222222205",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "<b>Leviatan</b>\n\nThis button is not linked to an action. Use <code>/insights</code> for the menu, type your request in chat, or reply <b>YES</b>/<b>NO</b> when the bot asks for confirmation.\n\n<i>API calls cannot be started from arbitrary inline data (Telegram limit).</i>",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "name": "Telegram Callback Unsupported",
+      "type": "n8n-nodes-base.telegram",
+      "position": [1680, 640],
+      "id": "f1a2b3c4-000d-4000-8000-00000000000d",
+      "typeVersion": 1.2,
+      "webhookId": "a1b2c3d4-1111-4111-8111-111111111104",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.requestUrl }}",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $env.LEVIATAN_API_AUTH_TOKEN ? 'Bearer ' + $env.LEVIATAN_API_AUTH_TOKEN : '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Call API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [3360, -120],
+      "id": "778c11dc-9be1-453d-87d5-d58aa66cce3d",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "functionCode": "const chatId = $('Validate and Build Request').first().json.chatId;\nconst envelope = $json.body !== undefined ? $json.body : $json;\nif (envelope && envelope.success === false) {\n  const err = envelope.error || {};\n  return [{ json: { chatId, message: 'Error: ' + (err.message || 'Request failed') } }];\n}\nconst data = envelope && envelope.data !== undefined ? envelope.data : envelope;\nif (data == null) return [{ json: { chatId, message: 'No data found.' } }];\nif (Array.isArray(data)) {\n  const msg = data.slice(0, 5).map((d, i) => '#' + (i + 1) + '\\n' + Object.entries(d).map(([k, v]) => '\\u2022 ' + k + ': ' + v).join('\\n')).join('\\n\\n');\n  return [{ json: { chatId, message: msg } }];\n}\nconst msg = typeof data === 'object' ? Object.entries(data).map(([k, v]) => '\\u2022 ' + k + ': ' + v).join('\\n') : String(data);\nreturn [{ json: { chatId, message: msg } }];"
+      },
+      "name": "Format Response",
+      "type": "n8n-nodes-base.function",
+      "position": [3560, -120],
+      "id": "9941d653-9737-404f-ad9d-1ea70a1f2d79",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { chatId: $json.chatId, message: 'Thank you for your clarification. We will not proceed with the requested action at this time. If you would like to refine your request or need further assistance, please let us know.' } }];"
+      },
+      "name": "Stakeholder Response",
+      "type": "n8n-nodes-base.function",
+      "position": [1680, 400],
+      "id": "7698c9df-5c57-491b-b161-a62f068c3868",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{$json.message}}",
+        "additionalFields": {}
+      },
+      "name": "Send Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [3840, 80],
+      "id": "b92144ac-b62c-4923-9dde-24e7ce27124f",
+      "typeVersion": 1.2,
+      "webhookId": "6dee50b8-996f-40d7-8fa6-53ffa81149ef",
+      "credentials": {
+        "telegramApi": {
+          "id": "XfdQ4S5N23EfLoaS",
+          "name": "leviatan bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v3.1:671b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [1424, 0],
+      "id": "27095283-61bd-4b1c-aec6-03fa73c72bfd",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "XyDaTrcUTZETMe6g",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Detect Bot Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Bot Command": {
+      "main": [
+        [
+          {
+            "node": "IF Bot Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Bot Command": {
+      "main": [
+        [
+          {
+            "node": "Command Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Intent Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command Switch": {
+      "main": [
+        [
+          {
+            "node": "Telegram Leviatan Welcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Leviatan Help",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Endpoint Catalog",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Filters Guide",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Unknown Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Filters Guide": {
+      "main": [
+        [
+          {
+            "node": "Telegram Leviatan Filters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Intent Parser": {
+      "main": [
+        [
+          {
+            "node": "Parse Agent Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Agent Output": {
+      "main": [
+        [
+          {
+            "node": "Intent Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Switch": {
+      "main": [
+        [
+          {
+            "node": "Build Endpoint Catalog",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Missing Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Execute Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Ask Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Ask Clarification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Endpoint Catalog": {
+      "main": [
+        [
+          {
+            "node": "Telegram List Endpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Execute Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Parse Confirmation Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Confirmation Reply": {
+      "main": [
+        [
+          {
+            "node": "Switch Confirmation Step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Confirmation Step": {
+      "main": [
+        [
+          {
+            "node": "Validate and Build Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stakeholder Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Retry Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Build Request": {
+      "main": [
+        [
+          {
+            "node": "IF Validation OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Validation OK": {
+      "main": [
+        [
+          {
+            "node": "Call API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call API": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Validation Error": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Retry Message": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stakeholder Response": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Callback": {
+      "main": [
+        [
+          {
+            "node": "Handle Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Callback": {
+      "main": [
+        [
+          {
+            "node": "Callback Route Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Callback Route Switch": {
+      "main": [
+        [
+          {
+            "node": "Stakeholder Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Leviatan Insight Card",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Callback Unsupported",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Leviatan Insight Card": {
+      "main": [
+        [
+          {
+            "node": "Telegram Insight Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Intent Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6e9d7f76-d3e0-4217-9f2e-ed710c2e5db0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2e13a332d21d34d490c7092d5f6f2dce7ddf022fba7cdb5937ced4be48851073"
+  },
+  "id": "LIqB7PnjClDMgcF9",
+  "tags": []
+}
