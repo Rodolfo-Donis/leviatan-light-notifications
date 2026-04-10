@@ -1,13 +1,9 @@
 import { mockCriticalDeliveries, mockDeliveryTracking } from "../data/deliveries.mock.js";
 import type { AdapterTimingConfig, CriticalDelivery, DeliveryPort, DeliveryTracking } from "../domain/types.js";
+import { executeMockDelay } from "../utilities/execute-mock-delay.js";
 
 // n8n: Replace with real HTTP call to Ariba/Coupa endpoint: /logistics/v1/shipments
 // n8n: Replace with real HTTP call to Ariba/Coupa endpoint: /api/shipments/v1/tracking
-
-async function executeMockDelay(config: AdapterTimingConfig): Promise<void> {
-  if (!config.enableMockDelay) return;
-  await new Promise<void>((resolve) => setTimeout(resolve, config.mockDelayMs));
-}
 
 export class DeliveryMockAdapter implements DeliveryPort {
   public constructor(private readonly timing: AdapterTimingConfig) {}

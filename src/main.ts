@@ -1,3 +1,4 @@
+import process from "node:process";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ContractMockAdapter } from "./adapters/contract.mock.adapter.js";
 import { DeliveryMockAdapter } from "./adapters/delivery.mock.adapter.js";
